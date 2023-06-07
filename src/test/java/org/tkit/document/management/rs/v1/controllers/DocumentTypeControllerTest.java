@@ -27,7 +27,7 @@ import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@WithDBData(value = { "document-management-test-data.xml" }, deleteBeforeInsert = true, rinseAndRepeat = true)
+@WithDBData(value = { "document-management-test-data.xls" }, deleteBeforeInsert = true, rinseAndRepeat = true)
 class DocumentTypeControllerTest extends AbstractTest {
 
     private static final String BASE_PATH = "/v1/document-type";

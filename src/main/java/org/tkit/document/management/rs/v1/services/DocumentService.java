@@ -101,7 +101,7 @@ public class DocumentService {
     @Inject
     MinioClient minioClient;
 
-    @ConfigProperty(name = "minio.bucket.name")
+    @ConfigProperty(name = "minio.bucket")
     String bucketName;
 
     @ConfigProperty(name = "minio.bucket.prefix")
