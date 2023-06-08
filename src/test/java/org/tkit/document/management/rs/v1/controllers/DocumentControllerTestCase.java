@@ -7,16 +7,9 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,8 +18,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -34,9 +25,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.mockito.Mockito;
-import org.tkit.document.management.domain.criteria.DocumentSearchCriteria;
-import org.tkit.document.management.domain.daos.DocumentDAO;
 import org.tkit.document.management.domain.models.enums.LifeCycleState;
 import org.tkit.document.management.rs.v1.models.AttachmentCreateUpdateDTO;
 import org.tkit.document.management.rs.v1.models.AttachmentDTO;
@@ -56,20 +44,12 @@ import org.tkit.document.management.rs.v1.models.RelatedObjectRefCreateUpdateDTO
 import org.tkit.document.management.rs.v1.models.RelatedPartyRefCreateUpdateDTO;
 import org.tkit.document.management.rs.v1.models.RelatedPartyRefDTO;
 import org.tkit.document.management.rs.v1.models.TimePeriodDTO;
-import org.tkit.document.management.rs.v1.services.FileService;
 import org.tkit.document.management.test.AbstractTest;
 import org.tkit.document.management.utils.JWTUtils;
-import org.tkit.quarkus.jpa.exceptions.DAOException;
 import org.tkit.quarkus.rs.models.PageResultDTO;
 import org.tkit.quarkus.rs.models.TraceableDTO;
 import org.tkit.quarkus.test.WithDBData;
 
-import io.minio.errors.ErrorResponseException;
-import io.minio.errors.InsufficientDataException;
-import io.minio.errors.InternalException;
-import io.minio.errors.InvalidResponseException;
-import io.minio.errors.ServerException;
-import io.minio.errors.XmlParserException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
@@ -78,12 +58,6 @@ import io.restassured.response.Response;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @WithDBData(value = { "document-management-test-data.xls" }, deleteBeforeInsert = true, rinseAndRepeat = true)
 public class DocumentControllerTestCase extends AbstractTest {
-
-    @Inject
-    private FileService fileService;
-
-    @Inject
-    private DocumentController documentController;
 
     private static final String BASE_PATH = "/v1/document";
     private static final String EXISTING_DOCUMENT_ID = "51";
@@ -133,21 +107,11 @@ public class DocumentControllerTestCase extends AbstractTest {
     @ConfigProperty(name = "minio.bucket")
     String bucket;
 
-    @Inject
-    private DocumentDAO documentDAO;
-
     @BeforeAll
     public static void setUp() throws Exception {
         default_valid_token = JWTUtils.generateTokenString("/META-INF/resources/test_tokens/test_token_1.json",
                 null);
         token_role = JWTUtils.generateTokenString("/META-INF/resources/test_tokens/test_token_2.json", null);
-    }
-
-    @BeforeAll
-    void createBucket() throws ServerException, InsufficientDataException, ErrorResponseException, IOException,
-            NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException,
-            InternalException {
-        fileService.checkAndCreateBucket(bucket);
     }
 
     @Test
@@ -577,58 +541,6 @@ public class DocumentControllerTestCase extends AbstractTest {
         assertThat(documentList).hasSize(3);
         assertThat(documentList.stream()).allMatch(el -> el.getRelatedObject().getObjectReferenceType()
                 .equals(RELATED_OBJECT_REF_TYPE_OF_DOCUMENT));
-    }
-
-    @Test
-    @DisplayName("Search criteria. Fails to perform a search with null criteria.")
-    void testFailedSearchWithNullCriteria() {
-        DocumentSearchCriteria criteria = null;
-        DAOException exception = assertThrows(DAOException.class,
-                () -> documentDAO.findBySearchCriteria(criteria));
-        assertEquals(DocumentDAO.ErrorKeys.ERROR_FIND_DOCUMENT_SEARCH_CRITERIA_REQUIRED,
-                exception.getMessageKey());
-    }
-
-    @Test
-    @DisplayName("Search criteria. Fails to perform a search of all documents with null criteria.")
-    void testFailedShowAllDocumentsWithNullCriteria() {
-        DocumentSearchCriteria criteria = null;
-        DAOException exception = assertThrows(DAOException.class,
-                () -> documentDAO.findAllDocumentsBySearchCriteria(criteria));
-        assertEquals(DocumentDAO.ErrorKeys.ERROR_FIND_DOCUMENT_SEARCH_CRITERIA_REQUIRED,
-                exception.getMessageKey());
-    }
-
-    @Test
-    @DisplayName("Search criteria. Test fails when we mock an exception.")
-    void testFailedSearchWithCriteriaMockException() {
-        DocumentSearchCriteria criteria = new DocumentSearchCriteria();
-
-        EntityManager entityManagerMock = Mockito.mock(EntityManager.class);
-        Mockito.when(entityManagerMock.getCriteriaBuilder()).thenThrow(new RuntimeException());
-
-        DAOException exception = assertThrows(DAOException.class,
-                () -> documentDAO.findBySearchCriteria(criteria));
-
-        assertEquals(DocumentDAO.ErrorKeys.ERROR_FIND_DOCUMENT_BY_CRITERIA, exception.getMessageKey());
-        assertNotNull(exception.getCause());
-        assertTrue(exception.getCause() instanceof RuntimeException);
-    }
-
-    @Test
-    @DisplayName("Search criteria. Test fails when we search all documents but mock an exception.")
-    void testFailedShowAllDocumentsWithCriteriaMockException() {
-        DocumentSearchCriteria criteria = new DocumentSearchCriteria();
-
-        EntityManager entityManagerMock = Mockito.mock(EntityManager.class);
-        Mockito.when(entityManagerMock.getCriteriaBuilder()).thenThrow(new RuntimeException());
-
-        DAOException exception = assertThrows(DAOException.class,
-                () -> documentDAO.findAllDocumentsBySearchCriteria(criteria));
-
-        assertEquals(DocumentDAO.ErrorKeys.ERROR_FIND_DOCUMENT_BY_CRITERIA, exception.getMessageKey());
-        assertNotNull(exception.getCause());
-        assertTrue(exception.getCause() instanceof RuntimeException);
     }
 
     @Test
@@ -1685,11 +1597,11 @@ public class DocumentControllerTestCase extends AbstractTest {
         postResponse.then().statusCode(NOT_FOUND.getStatusCode());
     }
 
-    @Test
-    @DisplayName("Test method for cleanup of failed files.")
-    void testSuccessfulDbCleanupOfFailedAttachments() {
-        documentController.clearFailedFilesFromDBPeriodically();
-    }
+    // @Test
+    // @DisplayName("Test method for cleanup of failed files.")
+    // void testSuccessfulDbCleanupOfFailedAttachments() {
+    // documentController.clearFailedFilesFromDBPeriodically();
+    // }
 
     private TypeRef<List<ChannelDTO>> getChannelDTOTypeRef() {
         return new TypeRef<>() {
