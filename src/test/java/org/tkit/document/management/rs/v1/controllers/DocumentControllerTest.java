@@ -675,21 +675,20 @@ public class DocumentControllerTest extends AbstractTest {
         assertThat(rfcProblemDTO.getType()).isEqualTo("REST_EXCEPTION");
     }
 
-    // @Test
-    // @DisplayName("Search criteria. Finds failed attachment by id.")
-    // void testSuccessfulGetFailedAttachmentById() {
-    // Response response = given().header("Authorization","bearer " +
-    // default_valid_token)
-    // .accept(MediaType.APPLICATION_JSON)
-    // .queryParam("id", EXISTING_DOCUMENT_ID)
-    // .when()
-    // .get(BASE_PATH);
-    //
-    // response.then().statusCode(200);
-    // PageResultDTO<DocumentDetailDTO> documents =
-    // response.as(getDocumentDetailDTOTypeRef());
-    // assertThat(documents.getStream().size()).isGreaterThan(0);
-    // }
+    @Test
+    @DisplayName("Search criteria. Finds failed attachment by id.")
+    void testSuccessfulGetFailedAttachmentById() {
+        Response response = given().header("Authorization", "bearer " +
+                default_valid_token)
+                .accept(MediaType.APPLICATION_JSON)
+                .queryParam("id", EXISTING_DOCUMENT_ID)
+                .when()
+                .get(BASE_PATH);
+
+        response.then().statusCode(200);
+        PageResultDTO<DocumentDetailDTO> documents = response.as(getDocumentDetailDTOTypeRef());
+        assertThat(documents.getStream()).isNotEmpty();
+    }
 
     @Test
     @DisplayName("Deletes document by id.")
@@ -1729,15 +1728,6 @@ public class DocumentControllerTest extends AbstractTest {
     // .when()
     // .delete(BASE_PATH + "/file/delete-bulk-attachment");
     // deleteResponse.then().statusCode(NO_CONTENT.getStatusCode());
-
-    // Response deleteMinioResponse1 = given()
-    // .when()
-    // .delete(FILE_BASE_PATH + BUCKET_NAME + "/" + MINIO_FILE_PATH_1).andReturn();
-    // deleteMinioResponse1.then().statusCode(201);
-    // Response deleteMinioResponse2 = given()
-    // .when()
-    // .delete(FILE_BASE_PATH + BUCKET_NAME + "/" + MINIO_FILE_PATH_2).andReturn();
-    // deleteMinioResponse2.then().statusCode(201);
 
     // }
 

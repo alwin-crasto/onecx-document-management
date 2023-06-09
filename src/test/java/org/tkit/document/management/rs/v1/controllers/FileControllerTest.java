@@ -36,7 +36,7 @@ public class FileControllerTest extends AbstractTest {
     private static final String BASE_PATH = "/v1/files/";
     private static final String NONEXISTENT_FILE_PATH = "l.png";
     private static final String APPLICATION_OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
-    private static final String prefix = "fs-dev-";
+    private static final String prefix = "fs-prod-";
 
     @Test
     @DisplayName("Create bucket for given name.")

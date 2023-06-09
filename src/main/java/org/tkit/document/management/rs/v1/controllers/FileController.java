@@ -42,7 +42,7 @@ public class FileController {
     @Inject
     FileService fileService;
 
-    @ConfigProperty(name = "minio.bucket.prefix", defaultValue = "def-")
+    @ConfigProperty(name = "bucketNamePrefix", defaultValue = "def-")
     String bucketNamePrefix;
 
     private static final String CLASS_NAME = "FileController";

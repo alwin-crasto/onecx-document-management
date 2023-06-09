@@ -28,7 +28,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import org.tkit.document.management.domain.daos.AttachmentDAO;
@@ -49,6 +48,7 @@ import org.tkit.document.management.domain.models.entities.RelatedPartyRef;
 import org.tkit.document.management.domain.models.entities.StorageUploadAudit;
 import org.tkit.document.management.domain.models.entities.SupportedMimeType;
 import org.tkit.document.management.domain.models.enums.AttachmentUnit;
+import org.tkit.document.management.minio.MinioConfig;
 import org.tkit.document.management.rs.v1.mappers.DocumentMapper;
 import org.tkit.document.management.rs.v1.mappers.DocumentSpecificationMapper;
 import org.tkit.document.management.rs.v1.models.AttachmentCreateUpdateDTO;
@@ -101,14 +101,8 @@ public class DocumentService {
     @Inject
     MinioClient minioClient;
 
-    @ConfigProperty(name = "minio.bucket")
-    String bucketName;
-
-    @ConfigProperty(name = "minio.bucket.prefix")
-    String bucketNamePrefix;
-
-    @ConfigProperty(name = "quarkus.minio.url")
-    String minioUrl;
+    @Inject
+    MinioConfig minioConfig;
 
     private static final Pattern FILENAME_PATTERN = Pattern.compile("filename=\\\"(.*)\\\"");
 
@@ -271,7 +265,7 @@ public class DocumentService {
             NoSuchAlgorithmException, ServerException, InternalException, XmlParserException, ErrorResponseException {
         Log.info(CLASS_NAME, "Entered getObjectFromObjectStore method", null);
         GetObjectArgs getObjectArgs = GetObjectArgs.builder()
-                .bucket(bucketNamePrefix + bucketName)
+                .bucket(minioConfig.getBucket())
                 .object(objectId)
                 .build();
         Log.info(CLASS_NAME, "Exited getObjectFromObjectStore method", null);
@@ -285,7 +279,7 @@ public class DocumentService {
         Log.info(CLASS_NAME, "Entered deleteFileInAttachment method", null);
         minioClient.removeObject(
                 RemoveObjectArgs.builder()
-                        .bucket(bucketNamePrefix + bucketName)
+                        .bucket(minioConfig.getBucket())
                         .object(attachment.getId())
                         .build());
         attachment.setSize(null);
@@ -494,7 +488,7 @@ public class DocumentService {
             NoSuchAlgorithmException, ServerException, InternalException, XmlParserException, ErrorResponseException {
         Log.info(CLASS_NAME, "Entered uploadFileToObjectStorage method", null);
         minioClient.putObject(PutObjectArgs.builder()
-                .bucket(bucketNamePrefix + bucketName)
+                .bucket(minioConfig.getBucket())
                 .object(id)
                 .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
                 .build());
@@ -508,7 +502,7 @@ public class DocumentService {
         attachment.setSizeUnit(AttachmentUnit.BYTES);
         attachment.setStorage("MinIO");
         attachment.setType(contentType);
-        attachment.setExternalStorageURL(minioUrl);
+        attachment.setExternalStorageURL(minioConfig.getUrl());
         attachment.setStorageUploadStatus(true);
         Log.info(CLASS_NAME, "Exited updateAttachmentAfterUpload method", null);
     }

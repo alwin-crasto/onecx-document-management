@@ -17,6 +17,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.transaction.Transactional;
 
+import org.tkit.document.management.minio.MinioConfig;
 import org.tkit.document.management.rs.v1.models.FileInfoDTO;
 
 import io.minio.BucketExistsArgs;
@@ -41,6 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 public class FileService {
     @Inject
     MinioClient minioClient;
+
+    @Inject
+    MinioConfig minioConfig;
 
     private static final String CLASS_NAME = "FileService";
 
@@ -88,6 +92,7 @@ public class FileService {
             minioClient.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket(bucket)
+                            .region(minioConfig.getRegion())
                             .build());
         }
         Log.info(CLASS_NAME, "Exited checkAndCreateBucket method", null);
