@@ -21,7 +21,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 
 @QuarkusTest
-class FileControllerTest extends AbstractTest {
+public class FileControllerTest extends AbstractTest {
 
     private static final String SAMPLE_FILE_PATH = "src/test/resources/sample.jpg";
     private static final String SAMPLE2_FILE_PATH = "src/test/resources/sample2.jpg";
@@ -34,9 +34,9 @@ class FileControllerTest extends AbstractTest {
     private static final String NOT_ALLOWED_BUCKET_NAME = "test_bucket";
     private static final String FORM_PARAM_FILE = "file";
     private static final String BASE_PATH = "/v1/files/";
-    private static final String NON_EXISTING_FILE_PATH = "l.png";
+    private static final String NONEXISTENT_FILE_PATH = "l.png";
     private static final String APPLICATION_OCTET_STREAM_CONTENT_TYPE = "application/octet-stream";
-    private static final String prefix = "fs-prod-";
+    private static final String prefix = "fs-dev-";
 
     @Test
     @DisplayName("Create bucket for given name.")
@@ -51,9 +51,8 @@ class FileControllerTest extends AbstractTest {
     }
 
     @Test
-    @DisplayName("Uploads jpg file")
-    void testSuccessfulUploadJPGFileTest() {
-
+    @DisplayName("Uploads a jpg file")
+    void testSuccessfulUploadJPGFile() {
         File sampleFile = new File(SAMPLE_FILE_PATH);
         Response putResponse = given()
                 .multiPart(FORM_PARAM_FILE, sampleFile)
@@ -101,22 +100,33 @@ class FileControllerTest extends AbstractTest {
     }
 
     @Test
-    @DisplayName("Returns internal server error when getting file that does not exist")
+    @DisplayName("Returns internal server error when downloading a file that does not exist")
     void testFailedDownloadJPGFile() {
         Response getResponse = given()
                 .when()
-                .get(BASE_PATH + BUCKET_NAME + "/" + NON_EXISTING_FILE_PATH).andReturn();
+                .get(BASE_PATH + BUCKET_NAME + "/" + NONEXISTENT_FILE_PATH).andReturn();
         getResponse.then().statusCode(500);
     }
 
     @Test
-    @DisplayName("Returns bad request when bucket contains not allowed characters")
+    @DisplayName("Returns a bad request error when the bucket name contains unallowed characters")
     void testFailedUploadJPGFile() {
         File sampleFile = new File(SAMPLE_FILE_PATH);
         Response putResponse = given()
                 .multiPart(FORM_PARAM_FILE, sampleFile)
                 .when()
                 .put(BASE_PATH + NOT_ALLOWED_BUCKET_NAME + "/" + MINIO_FILE_PATH);
+        putResponse.then().statusCode(400);
+    }
+
+    @Test
+    @DisplayName("Returns a bad request error on attempting to upload a 0 bytes file")
+    void testFailedUploadBlankFile() {
+        File sampleFile = new File(BLANK_FILE_PATH);
+        Response putResponse = given()
+                .multiPart(FORM_PARAM_FILE, sampleFile)
+                .when()
+                .put(BASE_PATH + BUCKET_NAME + "/" + MINIO_FILE_PATH);
         putResponse.then().statusCode(400);
     }
 
@@ -154,17 +164,6 @@ class FileControllerTest extends AbstractTest {
     }
 
     @Test
-    @DisplayName("Returns a bad request error on attempting to upload a 0 bytes file")
-    void testFailedUploadBlankFile() {
-        File sampleFile = new File(BLANK_FILE_PATH);
-        Response putResponse = given()
-                .multiPart(FORM_PARAM_FILE, sampleFile)
-                .when()
-                .put(BASE_PATH + BUCKET_NAME + "/" + MINIO_FILE_PATH);
-        putResponse.then().statusCode(400);
-    }
-
-    @Test
     @DisplayName("Deletes an already uploaded jpg file")
     void testSuccessfulDeleteJPGFile() throws IOException {
         File sampleFile = new File(SAMPLE_FILE_PATH);
@@ -184,7 +183,7 @@ class FileControllerTest extends AbstractTest {
     void testFailedDeleteNonexistentFile() throws IOException {
         Response deleteResponse = given()
                 .when()
-                .delete(BASE_PATH + BUCKET_NAME + "/" + NON_EXISTING_FILE_PATH).andReturn();
+                .delete(BASE_PATH + BUCKET_NAME + "/" + NONEXISTENT_FILE_PATH).andReturn();
         deleteResponse.then().statusCode(404);
     }
 }
